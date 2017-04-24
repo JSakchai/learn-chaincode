@@ -21,10 +21,17 @@ import (
 	"fmt"
 
 	"github.com/hyperledger/fabric/core/chaincode/shim"
+	"encoding/json"
 )
 
 // SimpleChaincode example simple Chaincode implementation
 type SimpleChaincode struct {
+}
+type Marble struct {
+	Name string `json:"name"`
+	Color string `json:"color"`
+	Size int `json:"size"`
+	User string `json:"user"`
 }
 
 // ============================================================================================================================
@@ -106,4 +113,28 @@ func (t *SimpleChaincode) read(stup shim.ChaincodeStubInterface, args []string) 
 		return nil,errors.New(jsonResp)
 	}
 	return  valAsbytes , nil
+}
+func (t *SimpleChaincode) set_user(stub shim.ChaincodeStubInterface, args []string) ([]byte,error){
+	var err error
+	// 0       1
+	// "name"  "bob"
+	if len(args) < 2 {
+		return nil, errors.New("Incorrect number of argument. Expecting")
+	}
+	fmt.Println("-start set user")
+	fmt.Println(args[0] + " - " + args[1])
+	marbleAsByte, err := stub.GetState(args[0])
+	if err != nil {
+		return  nil, errors.New("Fail to get thing")
+	}
+	res := Marble{}
+	json.Unmarshal(marbleAsByte, &res)  //un stringify it aka JSON.parse()
+	res.User = args[1]
+	jsonAsBytes, _ := json.Marshal(res)
+	err = stub.PutState(args[0], jsonAsBytes)  //rewrite the marble with id as key
+	if err != nil{
+		return nil,err
+	}
+	fmt.Println("- end set user")
+	return nil,nil
 }
